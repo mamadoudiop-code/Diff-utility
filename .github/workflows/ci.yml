@@ -29,4 +29,4 @@ jobs:
         JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}  # Définissez cela dans les secrets GitHub
         PYTHON_VERSION: ${{ env.python-version }}
       run: |
-        curl -X POST "http://localhost:9080/job/receive-data/build?token=11b416e3dd5eab3dd24c6e2867f19da128&&PYTHON_VERSION=${{ env.PYTHON_VERSION }}" --user "admin:11b416e3dd5eab3dd24c6e2867f19da128"
+        curl -X POST "http://localhost:9080/job/receive-data/build?token=11b416e3dd5eab3dd24c6e2867f19da128&PYTHON_VERSION=${{ env.PYTHON_VERSION }}" --user "admin:11b416e3dd5eab3dd24c6e2867f19da128"
