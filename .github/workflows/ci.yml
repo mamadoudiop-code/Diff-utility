@@ -30,4 +30,4 @@ jobs:
         PYTHON_VERSION: ${{ env.python-version }}
       run: |
         curl -X POST "http://localhost:9080//job/receive-data/buildWithParameters?PYTHON_VERSION=${{ env.PYTHON_VERSION }}" \
-        --user $JENKINS_USER:$JENKINS_API_TOKEN
+        --user "admin:11b416e3dd5eab3dd24c6e2867f19da128"
