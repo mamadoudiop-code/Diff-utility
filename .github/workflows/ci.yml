@@ -30,4 +30,4 @@ jobs:
         PYTHON_VERSION: ${{ env.python-version }}
       run: |
         curl -X POST "http://localhost:9080/job/receive-data/buildWithParameters" \
-         --user "admin:11b416e3dd5eab3dd24c6e2867f19da128" --data PYTHON_VERSION=${{ env.PYTHON_VERSION }}"
+         --user "admin:11b416e3dd5eab3dd24c6e2867f19da128" --data PYTHON_VERSION=${{ env.PYTHON_VERSION }}
