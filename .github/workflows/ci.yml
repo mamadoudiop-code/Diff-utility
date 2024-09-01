@@ -1,4 +1,4 @@
-name: Python CI
+name: Send Python Version to Jenkins
 
 on:
   push:
@@ -6,26 +6,28 @@ on:
       - main
 
 jobs:
-  test:
+  send-python-version:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out the repository
+    - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'  # Specify your Python version here
+        python-version: '3.11'  # Spécifiez la version de Python ici
 
-    - name: Install dependencies
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install -r requirement.txt
-        pip install pytest
+    - name: Get Python version
+      id: get-python-version
+      run: echo "python-version=$(python --version)" >> $GITHUB_ENV
 
-    - name: Run tests
+    - name: Send Python version to Jenkins
+      env:
+        JENKINS_URL: ${{ secrets.JENKINS_URL }}  # Définissez cela dans les secrets GitHub
+        JENKINS_USER: ${{ secrets.JENKINS_USER }}  # Définissez cela dans les secrets GitHub
+        JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}  # Définissez cela dans les secrets GitHub
+        PYTHON_VERSION: ${{ env.python-version }}
       run: |
-        source venv/bin/activate
-        python --version
+        curl -X POST "$JENKINS_URL/job/receive-data/buildWithParameters?PYTHON_VERSION=${{ env.PYTHON_VERSION }}" \
+        --user $JENKINS_USER:$JENKINS_API_TOKEN
