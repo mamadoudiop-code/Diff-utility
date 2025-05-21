@@ -7,7 +7,7 @@ on:
 
 jobs: 
   first_job:
-    runs-on: [ubuntu-latest, windows]
+    runs-on: ubuntu-latest
     steps:
     - name: welcome message
       run: echo "my first github action job"
@@ -16,7 +16,7 @@ jobs:
       run: ls
     
     - name: Read files
-      run: cat D:\mini-python-project\python-mini-project\Diff_Utility\README.md
+      run: cat ../../README.md
 
 
 
