@@ -3,7 +3,11 @@ name: my first workflow
 on:
   push:
     branches:
-      - testpipeline
+      - main
+  pull_request:
+    types: [assigned, opened, reopened, review_requested]
+    branches:
+      - 'feature/**'
 
 jobs: 
   first_job:
