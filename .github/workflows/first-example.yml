@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - main
+      - testpipeline
   pull_request:
-    types: opened
+    types: [opened, reopened]
     branches:
       - 'main'
       - 'testpipeline'
