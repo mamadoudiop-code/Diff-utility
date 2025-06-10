@@ -1,0 +1,20 @@
+<!DOCTYPE Custom PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Custom name="Configuration Export Taches Rapports">
+  <Attributes>
+    <Map>
+      <entry key="taskNames">
+        <value>
+          <!-- MODIFIEZ CETTE LISTE AVEC LES NOMS EXACTS DE VOS TÂCHES ET RAPPORTS -->
+          <List>
+            <String>Account Aggregation - Active Directory</String>
+            <String>Identity Refresh</String>
+            <String>Uncorrelated Accounts Report</String>
+            <String>Role Membership Report</String>
+            <String>Perform Maintenance</String>
+          </List>
+        </value>
+      </entry>
+      <entry key="outputDirectory" value="/opt/sailpoint/reports/task_exports/"/>
+    </Map>
+  </Attributes>
+</Custom>
