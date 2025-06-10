@@ -1,0 +1,94 @@
+import sailpoint.object.Identity;
+import sailpoint.object.Application;
+import sailpoint.object.Role;
+import sailpoint.object.Policy;
+import sailpoint.object.Rule;
+import sailpoint.api.SailPointContext;
+import sailpoint.tools.GeneralException;
+import java.util.Date;
+import java.util.Calendar;
+import java.util.List;
+import java.util.ArrayList;
+import sailpoint.object.QueryOptions;
+import sailpoint.object.Filter;
+
+List<String> changedObjectNames = new ArrayList<>();
+
+// 1. Définir les dates de début et de fin avec une granularité correcte
+Calendar cal = Calendar.getInstance();
+
+// Date de début : Hier à 00:00:00.000
+cal.add(Calendar.DAY_OF_MONTH, -1); // Recule d'un jour
+cal.set(Calendar.HOUR_OF_DAY, 0);
+cal.set(Calendar.MINUTE, 0);
+cal.set(Calendar.SECOND, 0);
+cal.set(Calendar.MILLISECOND, 0);
+Date startDate = cal.getTime();
+
+// Date de fin "exclusive" : Demain à 00:00:00.000
+// C'est le début de la journée D+1, donc tout ce qui est MODIFIÉ AVANT cette heure
+// sera inclus, ce qui couvre toute la journée d'aujourd'hui.
+cal = Calendar.getInstance(); // Réinitialise le calendrier à l'heure actuelle
+cal.add(Calendar.DAY_OF_MONTH, 1); // Avance d'un jour
+cal.set(Calendar.HOUR_OF_DAY, 0);
+cal.set(Calendar.MINUTE, 0);
+cal.set(Calendar.SECOND, 0);
+cal.set(Calendar.MILLISECOND, 0);
+Date tomorrowStart = cal.getTime(); // C'est la date exclusive de fin
+
+System.out.println("Recherche des objets modifiés entre : " + startDate + " (inclus) et " + tomorrowStart + " (exclus)");
+log.debug("Recherche des objets modifiés entre : " + startDate + " (inclus) et " + tomorrowStart + " (exclus)");
+
+
+// 2. Interroger les objets (Exemples pour Identity, Application, Role, Policy, Rule)
+
+// a) Identités (Identity)
+QueryOptions qoIdentity = new QueryOptions();
+qoIdentity.addFilter(Filter.ge("modified", startDate));      // modified >= début de journée d'hier
+qoIdentity.addFilter(Filter.lt("modified", tomorrowStart));  // modified < début de journée de demain (i.e., toute la journée d'aujourd'hui)
+List<Identity> identities = context.getObjects(Identity.class, qoIdentity);
+for (Identity id : identities) {
+    changedObjectNames.add("Identity: " + id.getName() + " (Last Modified: " + id.getModified() + ")");
+}
+
+// b) Applications (Application)
+QueryOptions qoApplication = new QueryOptions();
+qoApplication.addFilter(Filter.ge("modified", startDate));
+qoApplication.addFilter(Filter.lt("modified", tomorrowStart));
+List<Application> applications = context.getObjects(Application.class, qoApplication);
+for (Application app : applications) {
+    changedObjectNames.add("Application: " + app.getName() + " (Last Modified: " + app.getModified() + ")");
+}
+
+// c) Rôles (Role)
+QueryOptions qoRole = new QueryOptions();
+qoRole.addFilter(Filter.ge("modified", startDate));
+qoRole.addFilter(Filter.lt("modified", tomorrowStart));
+List<Role> roles = context.getObjects(Role.class, qoRole);
+for (Role role : roles) {
+    changedObjectNames.add("Role: " + role.getName() + " (Last Modified: " + role.getModified() + ")");
+}
+
+// d) Politiques (Policy)
+QueryOptions qoPolicy = new QueryOptions();
+qoPolicy.addFilter(Filter.ge("modified", startDate));
+qoPolicy.addFilter(Filter.lt("modified", tomorrowStart));
+List<Policy> policies = context.getObjects(Policy.class, qoPolicy);
+for (Policy policy : policies) {
+    changedObjectNames.add("Policy: " + policy.getName() + " (Last Modified: " + policy.getModified() + ")");
+}
+
+// e) Règles (Rule)
+QueryOptions qoRule = new QueryOptions();
+qoRule.addFilter(Filter.ge("modified", startDate));
+qoRule.addFilter(Filter.lt("modified", tomorrowStart));
+List<Rule> rules = context.getObjects(Rule.class, qoRule);
+for (Rule rule : rules) {
+    changedObjectNames.add("Rule: " + rule.getName() + " (Last Modified: " + rule.getModified() + ")");
+}
+
+
+System.out.println("Nombre d'objets modifiés trouvés: " + changedObjectNames.size());
+log.debug("Nombre d'objets modifiés trouvés: " + changedObjectNames.size());
+
+return changedObjectNames;
