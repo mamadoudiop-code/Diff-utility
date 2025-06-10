@@ -11,85 +11,102 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.HashMap; // Assurez-vous que HashMap est bien importé
+import java.util.HashMap;
+import java.text.SimpleDateFormat; // Import for date formatting
 
-// Les variables 'context' et 'log' sont automatiquement disponibles.
+// The 'context' and 'log' variables are automatically available.
 
-List<String> changedObjectNames = new ArrayList<>();
+List changedObjectNames = new ArrayList();
 
-// 1. Définir la plage de dates
-// Nous allons chercher les modifications depuis le début d'hier jusqu'à la fin d'aujourd'hui.
-
+// 1. Define the date range
 Calendar cal = Calendar.getInstance();
 
-// Définir la date de fin "exclusive" : le début de demain (00:00:00.000)
-// Cela signifie que nous inclurons toutes les modifications jusqu'à la dernière milliseconde d'aujourd'hui.
-cal.add(Calendar.DAY_OF_MONTH, 1); // Avance d'un jour
+// Define the "exclusive" end date: beginning of tomorrow (00:00:00.000)
+cal.add(Calendar.DAY_OF_MONTH, 1); // Advance one day
 cal.set(Calendar.HOUR_OF_DAY, 0);
 cal.set(Calendar.MINUTE, 0);
 cal.set(Calendar.SECOND, 0);
 cal.set(Calendar.MILLISECOND, 0);
 Date tomorrowStart = cal.getTime();
 
-// Définir la date de début "inclusive" : le début d'hier (00:00:00.000)
-cal = Calendar.getInstance(); // Réinitialiser le calendrier à l'heure actuelle
-cal.add(Calendar.DAY_OF_MONTH, -1); // Recule d'un jour
+// Define the "inclusive" start date: beginning of yesterday (00:00:00.000)
+cal = Calendar.getInstance(); // Reset calendar to current time
+cal.add(Calendar.DAY_OF_MONTH, -1); // Go back one day
 cal.set(Calendar.HOUR_OF_DAY, 0);
 cal.set(Calendar.MINUTE, 0);
 cal.set(Calendar.SECOND, 0);
 cal.set(Calendar.MILLISECOND, 0);
 Date yesterdayStart = cal.getTime();
 
+// For debugging/logging purposes
+log.debug("Target Date Range (HQL): From " + yesterdayStart + " (inclusive) to " + tomorrowStart + " (exclusive)");
 
-log.debug("Recherche des objets modifiés (HQL) entre : " + yesterdayStart + " (inclus) et " + tomorrowStart + " (exclus)");
+// 2. Format dates into strings for HQL comparison
+// Use a SimpleDateFormat to convert dates to a database-friendly string format.
+// This format (ISO 8601) is generally well-understood by most databases.
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+String startDateFormatted = sdf.format(yesterdayStart);
+String endDateFormatted = sdf.format(tomorrowStart); // This will be the exclusive end
 
-// 2. Interroger les objets en utilisant des requêtes HQL
+log.debug("Formatted Date Strings for HQL: startDate = '" + startDateFormatted + "', endDate = '" + endDateFormatted + "'");
 
-// Déclaration de la Map sans génériques
-Map hqlParams = new HashMap();
-hqlParams.put("startDate", yesterdayStart);
-hqlParams.put("endDate", tomorrowStart); // Renommé pour clarté en HQL, mais reste "exclusif"
 
-// a) Identités (Identity)
-String hqlIdentity = "FROM Identity WHERE modified >= :startDate AND modified < :endDate";
-Iterator itIdentity = context.search(hqlIdentity, hqlParams); // L'Iterator n'a pas non plus besoin de générique
+// 3. Query objects using HQL with formatted date strings
+// Instead of passing Date objects as parameters, embed the formatted strings directly.
+// Note: If your database expects a specific function (e.g., TO_DATE in Oracle) around the string,
+// you might need to add that. For most cases, direct string comparison works if format is correct.
+
+// No need for a separate Map for parameters if embedding strings directly
+// Map hqlParams = new HashMap(); // Not used in this approach for dates
+// hqlParams.put("startDate", yesterdayStart);
+// hqlParams.put("endDate", tomorrowStart);
+
+// a) Identities (Identity)
+// Using single quotes around the date strings in HQL to treat them as literals
+String hqlIdentity = "FROM Identity WHERE modified >= '" + startDateFormatted + "' AND modified < '" + endDateFormatted + "'";
+log.debug("Executing HQL for Identity: " + hqlIdentity);
+Iterator itIdentity = context.search(hqlIdentity, null); // Pass null for parameters if embedding strings
 while (itIdentity.hasNext()) {
-    Identity id = (Identity) itIdentity.next(); // Cast explicite est nécessaire pour le type d'objet
+    Identity id = (Identity) itIdentity.next();
     changedObjectNames.add("Identity: " + id.getName() + " (Last Modified: " + id.getModified() + ")");
 }
 
 // b) Applications (Application)
-String hqlApplication = "FROM Application WHERE modified >= :startDate AND modified < :endDate";
-Iterator itApplication = context.search(hqlApplication, hqlParams);
+String hqlApplication = "FROM Application WHERE modified >= '" + startDateFormatted + "' AND modified < '" + endDateFormatted + "'";
+log.debug("Executing HQL for Application: " + hqlApplication);
+Iterator itApplication = context.search(hqlApplication, null);
 while (itApplication.hasNext()) {
     Application app = (Application) itApplication.next();
     changedObjectNames.add("Application: " + app.getName() + " (Last Modified: " + app.getModified() + ")");
 }
 
-// c) Rôles (Role)
-String hqlRole = "FROM Role WHERE modified >= :startDate AND modified < :endDate";
-Iterator itRole = context.search(hqlRole, hqlParams);
+// c) Roles (Role)
+String hqlRole = "FROM Role WHERE modified >= '" + startDateFormatted + "' AND modified < '" + endDateFormatted + "'";
+log.debug("Executing HQL for Role: " + hqlRole);
+Iterator itRole = context.search(hqlRole, null);
 while (itRole.hasNext()) {
     Role role = (Role) itRole.next();
     changedObjectNames.add("Role: " + role.getName() + " (Last Modified: " + role.getModified() + ")");
 }
 
-// d) Politiques (Policy)
-String hqlPolicy = "FROM Policy WHERE modified >= :startDate AND modified < :endDate";
-Iterator itPolicy = context.search(hqlPolicy, hqlParams);
+// d) Policies (Policy)
+String hqlPolicy = "FROM Policy WHERE modified >= '" + startDateFormatted + "' AND modified < '" + endDateFormatted + "'";
+log.debug("Executing HQL for Policy: " + hqlPolicy);
+Iterator itPolicy = context.search(hqlPolicy, null);
 while (itPolicy.hasNext()) {
     Policy policy = (Policy) itPolicy.next();
     changedObjectNames.add("Policy: " + policy.getName() + " (Last Modified: " + policy.getModified() + ")");
 }
 
-// e) Règles (Rule)
-String hqlRule = "FROM Rule WHERE modified >= :startDate AND modified < :endDate";
-Iterator itRule = context.search(hqlRule, hqlParams);
+// e) Rules (Rule)
+String hqlRule = "FROM Rule WHERE modified >= '" + startDateFormatted + "' AND modified < '" + endDateFormatted + "'";
+log.debug("Executing HQL for Rule: " + hqlRule);
+Iterator itRule = context.search(hqlRule, null);
 while (itRule.hasNext()) {
     Rule rule = (Rule) itRule.next();
     changedObjectNames.add("Rule: " + rule.getName() + " (Last Modified: " + rule.getModified() + ")");
 }
 
-log.debug("Nombre d'objets modifiés trouvés: " + changedObjectNames.size());
+log.debug("Total number of modified objects found: " + changedObjectNames.size());
 
 return changedObjectNames;
