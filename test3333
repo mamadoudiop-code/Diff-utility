@@ -9,82 +9,85 @@ import java.util.Date;
 import java.util.Calendar;
 import java.util.List;
 import java.util.ArrayList;
-import sailpoint.object.QueryOptions;
-import sailpoint.object.Filter; // On peut encore l'utiliser pour des filtres non-date
+import java.util.Iterator;
+import java.util.Map;
+import java.util.HashMap; // Assurez-vous que HashMap est bien importé
 
 // Les variables 'context' et 'log' sont automatiquement disponibles.
 
 List<String> changedObjectNames = new ArrayList<>();
 
-// 1. Définir les dates de début et de fin pour la comparaison
+// 1. Définir la plage de dates
+// Nous allons chercher les modifications depuis le début d'hier jusqu'à la fin d'aujourd'hui.
+
 Calendar cal = Calendar.getInstance();
 
-// Définir la fin de la journée d'aujourd'hui (23:59:59.999)
-cal.set(Calendar.HOUR_OF_DAY, 23);
-cal.set(Calendar.MINUTE, 59);
-cal.set(Calendar.SECOND, 59);
-cal.set(Calendar.MILLISECOND, 999);
-Date endDateInclusive = cal.getTime(); // Date de fin incluse dans la plage
-
-// Définir le début de la journée d'hier (00:00:00.000)
-cal.add(Calendar.DAY_OF_MONTH, -1); // Recule d'un jour par rapport à endDateInclusive
+// Définir la date de fin "exclusive" : le début de demain (00:00:00.000)
+// Cela signifie que nous inclurons toutes les modifications jusqu'à la dernière milliseconde d'aujourd'hui.
+cal.add(Calendar.DAY_OF_MONTH, 1); // Avance d'un jour
 cal.set(Calendar.HOUR_OF_DAY, 0);
 cal.set(Calendar.MINUTE, 0);
 cal.set(Calendar.SECOND, 0);
 cal.set(Calendar.MILLISECOND, 0);
-Date startDateInclusive = cal.getTime(); // Date de début incluse dans la plage
+Date tomorrowStart = cal.getTime();
 
-log.debug("Recherche des objets modifiés entre : " + startDateInclusive + " et " + endDateInclusive);
+// Définir la date de début "inclusive" : le début d'hier (00:00:00.000)
+cal = Calendar.getInstance(); // Réinitialiser le calendrier à l'heure actuelle
+cal.add(Calendar.DAY_OF_MONTH, -1); // Recule d'un jour
+cal.set(Calendar.HOUR_OF_DAY, 0);
+cal.set(Calendar.MINUTE, 0);
+cal.set(Calendar.SECOND, 0);
+cal.set(Calendar.MILLISECOND, 0);
+Date yesterdayStart = cal.getTime();
 
-// 2. Récupérer tous les objets d'un type donné et les filtrer en mémoire
+
+log.debug("Recherche des objets modifiés (HQL) entre : " + yesterdayStart + " (inclus) et " + tomorrowStart + " (exclus)");
+
+// 2. Interroger les objets en utilisant des requêtes HQL
+
+// Déclaration de la Map sans génériques
+Map hqlParams = new HashMap();
+hqlParams.put("startDate", yesterdayStart);
+hqlParams.put("endDate", tomorrowStart); // Renommé pour clarté en HQL, mais reste "exclusif"
 
 // a) Identités (Identity)
-// Pour les identités, une recherche sans filtre peut être très coûteuse.
-// On pourrait potentiellement ajouter un filtre simple qui marche toujours,
-// par exemple pour récupérer les identités actives ou non nulles.
-// Pour l'exemple, nous allons récupérer toutes les identités et filtrer.
-List<Identity> allIdentities = context.getObjects(Identity.class);
-for (Identity id : allIdentities) {
-    if (id.getModified() != null && id.getModified().after(startDateInclusive) && id.getModified().before(endDateInclusive)) {
-        changedObjectNames.add("Identity: " + id.getName() + " (Last Modified: " + id.getModified() + ")");
-    }
-    // Inclure les objets créés entre les dates si vous le souhaitez aussi
-    // else if (id.getCreated() != null && id.getCreated().after(startDateInclusive) && id.getCreated().before(endDateInclusive)) {
-    //     changedObjectNames.add("New Identity: " + id.getName() + " (Created: " + id.getCreated() + ")");
-    // }
+String hqlIdentity = "FROM Identity WHERE modified >= :startDate AND modified < :endDate";
+Iterator itIdentity = context.search(hqlIdentity, hqlParams); // L'Iterator n'a pas non plus besoin de générique
+while (itIdentity.hasNext()) {
+    Identity id = (Identity) itIdentity.next(); // Cast explicite est nécessaire pour le type d'objet
+    changedObjectNames.add("Identity: " + id.getName() + " (Last Modified: " + id.getModified() + ")");
 }
 
-
 // b) Applications (Application)
-List<Application> allApplications = context.getObjects(Application.class);
-for (Application app : allApplications) {
-    if (app.getModified() != null && app.getModified().after(startDateInclusive) && app.getModified().before(endDateInclusive)) {
-        changedObjectNames.add("Application: " + app.getName() + " (Last Modified: " + app.getModified() + ")");
-    }
+String hqlApplication = "FROM Application WHERE modified >= :startDate AND modified < :endDate";
+Iterator itApplication = context.search(hqlApplication, hqlParams);
+while (itApplication.hasNext()) {
+    Application app = (Application) itApplication.next();
+    changedObjectNames.add("Application: " + app.getName() + " (Last Modified: " + app.getModified() + ")");
 }
 
 // c) Rôles (Role)
-List<Role> allRoles = context.getObjects(Role.class);
-for (Role role : allRoles) {
-    if (role.getModified() != null && role.getModified().after(startDateInclusive) && role.getModified().before(endDateInclusive)) {
-        changedObjectNames.add("Role: " + role.getName() + " (Last Modified: " + role.getModified() + ")");
-    }
+String hqlRole = "FROM Role WHERE modified >= :startDate AND modified < :endDate";
+Iterator itRole = context.search(hqlRole, hqlParams);
+while (itRole.hasNext()) {
+    Role role = (Role) itRole.next();
+    changedObjectNames.add("Role: " + role.getName() + " (Last Modified: " + role.getModified() + ")");
 }
 
 // d) Politiques (Policy)
-List<Policy> allPolicies = context.getObjects(Policy.class);
-for (Policy policy : allPolicies) {
-    if (policy.getModified() != null && policy.getModified().after(startDateInclusive) && policy.getModified().before(endDateInclusive)) {
-        changedObjectNames.add("Policy: " + policy.getName() + " (Last Modified: " + policy.getModified() + ")");
-    }
+String hqlPolicy = "FROM Policy WHERE modified >= :startDate AND modified < :endDate";
+Iterator itPolicy = context.search(hqlPolicy, hqlParams);
+while (itPolicy.hasNext()) {
+    Policy policy = (Policy) itPolicy.next();
+    changedObjectNames.add("Policy: " + policy.getName() + " (Last Modified: " + policy.getModified() + ")");
 }
 
 // e) Règles (Rule)
-List<Rule> allRules = context.getObjects(Rule.class);
-for (Rule rule : allRules) {
-    if (rule.getModified() != null && rule.getModified().after(startDateInclusive) && rule.getModified().before(endDateInclusive)) {
-        changedObjectNames.add("Rule: " + rule.getName() + " (Last Modified: " + rule.getModified() + ")");
-    }
+String hqlRule = "FROM Rule WHERE modified >= :startDate AND modified < :endDate";
+Iterator itRule = context.search(hqlRule, hqlParams);
+while (itRule.hasNext()) {
+    Rule rule = (Rule) itRule.next();
+    changedObjectNames.add("Rule: " + rule.getName() + " (Last Modified: " + rule.getModified() + ")");
 }
 
 log.debug("Nombre d'objets modifiés trouvés: " + changedObjectNames.size());
