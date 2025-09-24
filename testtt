@@ -1,15 +1,93 @@
-// Définir la fin de la journée (aujourd'hui à 23:59:59.999)
-// Cela garantit que toutes les modifications d'aujourd'hui sont incluses.
-cal.set(Calendar.HOUR_OF_DAY, 23);
-cal.set(Calendar.MINUTE, 59);
-cal.set(Calendar.SECOND, 59);
-cal.set(Calendar.MILLISECOND, 999);
-Date endDate = cal.getTime();
+name: Génération manuelle de la note de publication
 
-// Définir le début de la journée d'hier (hier à 00:00:00.000)
-cal.add(Calendar.DAY_OF_MONTH, -1); // Recule d'un jour par rapport à l'endDate
-cal.set(Calendar.HOUR_OF_DAY, 0);
-cal.set(Calendar.MINUTE, 0);
-cal.set(Calendar.SECOND, 0);
-cal.set(Calendar.MILLISECOND, 0);
-Date startDate = cal.getTime();
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Nom du tag (ex: 31.1.0)'
+        required: true
+        type: string
+        
+env:
+  JIRA_URL: 'https://votre-instance.atlassian.net'
+  JIRA_PROJECT_KEY: 'FOGI'
+
+jobs:
+  draft_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Créer le brouillon de la note de publication pour le tag
+        uses: release-drafter/release-drafter@v5
+        with:
+          config-name: release-drafter.yml
+          tag: ${{ github.event.inputs.tag_name }}
+          name: "Release ${{ github.event.inputs.tag_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+  enrich_release_with_jira:
+    runs-on: ubuntu-latest
+    needs: draft_release # S'assure que la première étape est terminée
+    steps:
+      - name: Récupérer le brouillon de la note de publication
+        id: get_release
+        run: |
+          # Cet appel API trouve le brouillon de la dernière version créée
+          RELEASE_ID=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases" | jq '.[0].id')
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+      
+      - name: Enrichir la note avec les détails de Jira
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const jiraUrl = process.env.JIRA_URL;
+            const jiraUser = process.env.JIRA_USER;
+            const jiraToken = process.env.JIRA_TOKEN;
+            const releaseId = ${{ steps.get_release.outputs.release_id }};
+            const projectKey = process.env.JIRA_PROJECT_KEY;
+
+            // Récupérer le contenu du brouillon
+            const { data: release } = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+            });
+
+            // Trouver les identifiants Jira
+            const jiraIssueIds = new Set();
+            const regex = new RegExp(`${projectKey}-[0-9]+`, 'g');
+            let match;
+            while ((match = regex.exec(release.body)) !== null) {
+              jiraIssueIds.add(match[0]);
+            }
+
+            // Récupérer les informations de chaque ticket Jira
+            let jiraDetails = "";
+            for (const issueId of jiraIssueIds) {
+              const jiraApiUrl = `${jiraUrl}/rest/api/3/issue/${issueId}?fields=summary,status,issuetype`;
+              const response = await fetch(jiraApiUrl, {
+                headers: {
+                  'Authorization': `Basic ${Buffer.from(jiraUser + ':' + jiraToken).toString('base64')}`,
+                  'Accept': 'application/json'
+                }
+              });
+
+              if (response.ok) {
+                const issue = await response.json();
+                jiraDetails += `- **${issueId}**: ${issue.fields.summary} (${issue.fields.issuetype.name}) - Statut: ${issue.fields.status.name}\n`;
+              } else {
+                jiraDetails += `- **${issueId}**: Erreur de récupération des informations\n`;
+              }
+            }
+
+            // Mettre à jour la note de publication
+            const newBody = release.body.replace('$TICKET_LINKS', jiraDetails);
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+              body: newBody,
+            });
