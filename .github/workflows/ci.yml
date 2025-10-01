@@ -21,6 +21,23 @@ jobs:
     - name: Get Python version
       id: get-python-version
       run: echo "python-version=$(python --version)" >> $GITHUB_ENV
+    - name: get tags
+      id: set_vars
+      run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -eq 0 ]; then
+          # Si la commande réussit, utilisez le tag trouvé
+            NAME=$LAST_TAG
+          else
+              # Si aucun tag n'est trouvé (code 128), utilisez une valeur par défaut
+            NAME="v0.0.0-initial"
+          fi
+          echo "package_name=$NAME" >> $GITHUB_OUTPUT
+    - name: latest tag
+      run: |
+         PACKAGE_NAME="${{ steps.set_vars.outputs.package_name }}"
+         echo $PACKAGE_NAME
 
     - name: Send Python version to Jenkins
       env:
