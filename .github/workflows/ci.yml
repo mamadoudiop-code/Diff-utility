@@ -12,6 +12,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      with:
+       fetch-depth: 0
+       tags: true
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -24,7 +27,7 @@ jobs:
     - name: get tags
       id: set_vars
       run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+          LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null)"
           EXIT_CODE=$?
           if [ $EXIT_CODE -eq 0 ]; then
           # Si la commande réussit, utilisez le tag trouvé
