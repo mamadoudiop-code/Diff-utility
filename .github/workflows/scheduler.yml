@@ -3,9 +3,9 @@ name: ⏰ Planificateur Quotidien
 on:
   schedule:
     # Déclenchement à 7h30 du matin (Heure UTC)
-    - cron: '30 7 * * *'
+    - cron: '*/1 * * * *'
     # Déclenchement à 15h30 (Heure UTC)
-    - cron: '30 15 * * *'
+    #- cron: '30 15 * * *'
 
 jobs:
   trigger_build:
