@@ -20,7 +20,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'main.yml', // Le nom du fichier de votre workflow principal
-              ref: 'develop',           // La branche sur laquelle le pipeline doit travailler
+              ref: 'main',           // La branche sur laquelle le pipeline doit travailler
               // Vous pouvez passer des inputs si nécessaire ici
               inputs: {
                 source: 'scheduled_run'
