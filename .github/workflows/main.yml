@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Afficher la source de déclenchement
+        if: github.event_name == 'workflow_dispatch'
         run: echo "Déclenché par : ${{ github.event.inputs.source }}"
       
       # Ajoutez ici le reste de vos étapes (build, test, deploy, etc.)
