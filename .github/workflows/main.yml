@@ -7,7 +7,7 @@ on:
       source:
         description: 'Source de déclenchement (scheduled_run ou manuel)'
         required: true
-        default: 'manuel'
+        default: 'scheduled_run'
 
 jobs:
   # Votre pipeline commence ici
