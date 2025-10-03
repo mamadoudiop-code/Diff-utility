@@ -1,29 +1,38 @@
-name: 🚀 Pipeline CI/CD Principal
+name: Tâche Quotidienne 8h et 12h sur Develop (Montréal)
 
+# AUCUN trigger 'push' ou 'pull_request' n'est spécifié,
+# ainsi, le workflow ne sera déclenché que par le 'schedule'.
 on:
-  # Permet le déclenchement par le scheduler (via l'API)
+  schedule:
+    - cron: '49 4 * * *'
+    # 0 12 * * * -> Tous les jours à 12h00 UTC (correspond à 8h00 AM EDT à Montréal)
+    - cron: '0 12 * * *' 
+    # 0 16 * * * -> Tous les jours à 16h00 UTC (correspond à 12h00 PM EDT à Montréal)
+    - cron: '0 16 * * *'
+  
+  # Optionnel : permet de déclencher le workflow manuellement
   workflow_dispatch:
-    inputs:
-      source:
-        description: 'Source de déclenchement (scheduled_run ou manuel)'
-        required: true
-        default: 'scheduled_run'
 
 jobs:
-  # Votre pipeline commence ici
-  build_and_deploy:
+  run_on_schedule:
     runs-on: ubuntu-latest
     
-    # Condition : Vérifie si le déclenchement vient bien de la branche develop
-    if: github.ref == 'refs/heads/main'
-    
     steps:
-      - name: Checkout du code (sur la branche develop spécifiée)
+      - name: Checkout de la branche develop
         uses: actions/checkout@v4
-        
-      - name: Afficher la source de déclenchement
-        if: github.event_name == 'workflow_dispatch'
-        run: echo "Déclenché par : ${{ github.event.inputs.source }}"
-      
-      # Ajoutez ici le reste de vos étapes (build, test, deploy, etc.)
-      # ...
+        with:
+          # Assurez-vous de récupérer la dernière version de la branche develop
+          ref: develop 
+
+      - name: Afficher l'heure locale (Montréal) pour vérification
+        run: |
+          echo "Le workflow a été déclenché à l'heure planifiée."
+          # Affiche l'heure à Montréal pour confirmer que c'est bien 8h00 ou 12h00
+          TZ="America/Montreal" date +"Heure locale d'exécution : %H:%M:%S"
+          
+      # --- Vos actions (build, test, déploiement, etc.) suivent ici ---
+
+      - name: Exécuter les tâches principales (build/déploiement)
+        run: |
+          echo "La tâche sur 'develop' est en cours d'exécution."
+          # Placez ici les commandes que vous souhaitez exécuter
