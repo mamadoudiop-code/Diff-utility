@@ -1,26 +1,4 @@
-name: my first workflow
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: opened
-    branches:
-      - 'feature/**'
-
-jobs: 
-  first_job:
-    runs-on: ubuntu-latest
-    steps:
-    - name: welcome message
-      run: echo "my first github action job"
-
-    - name: List files
-      run: ls
-    
-    - name: Read files
-      run: cat ../../README.md
 
 
 
