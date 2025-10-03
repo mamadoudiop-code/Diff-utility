@@ -3,12 +3,6 @@ name: Tâche Quotidienne 8h et 12h sur Develop (Montréal)
 # AUCUN trigger 'push' ou 'pull_request' n'est spécifié,
 # ainsi, le workflow ne sera déclenché que par le 'schedule'.
 on:
-  schedule:
-    - cron: '49 4 * * *'
-    # 0 12 * * * -> Tous les jours à 12h00 UTC (correspond à 8h00 AM EDT à Montréal)
-    - cron: '0 12 * * *' 
-    # 0 16 * * * -> Tous les jours à 16h00 UTC (correspond à 12h00 PM EDT à Montréal)
-    - cron: '0 16 * * *'
   
   # Optionnel : permet de déclencher le workflow manuellement
   workflow_dispatch:
