@@ -1,9 +1,7 @@
 name: Send Python Version to Jenkins
 
 on:
-  push:
-    branches:
-      - main
+  
 
 jobs:
   send-python-version:
