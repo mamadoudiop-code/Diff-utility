@@ -1,0 +1,61 @@
+name: Déployer une Branche vers un Environnement
+
+on:
+  # Permet le déclenchement manuel avec un formulaire
+  workflow_dispatch:
+    inputs:
+      # 1. Sélection de la BRANCHE (Input de type string)
+      branch_name:
+        description: 'Nom de la branche à déployer (e.g., develop, main, feature/fix-123)'
+        required: true
+        default: 'develop'
+        type: string
+        
+      # 2. Sélection de l'ENVIRONNEMENT (Input de type choice)
+      environment_name:
+        description: 'Environnement de déploiement cible'
+        required: true
+        type: choice
+        default: 'staging'
+        options: 
+          - staging
+          - production
+
+jobs:
+  # Ce job est responsable de l'exécution du déploiement
+  deploy:
+    runs-on: ubuntu-latest
+    
+    # Étape 1 : Cloner le code de la branche sélectionnée
+    steps:
+      - name: Checkout de la branche ${{ github.event.inputs.branch_name }}
+        uses: actions/checkout@v4
+        with:
+          # C'est l'étape cruciale : 'ref' utilise la valeur entrée par l'utilisateur
+          ref: ${{ github.event.inputs.branch_name }}
+
+      - name: Afficher les informations de la tâche
+        run: |
+          echo "Déploiement en cours..."
+          echo "Branche source : ${{ github.event.inputs.branch_name }}"
+          echo "Environnement cible : ${{ github.event.inputs.environment_name }}"
+
+      # Étape 2 : Déploiement Conditionnel (Staging)
+      # La condition est true si l'utilisateur a choisi 'staging'
+      - name: Déploiement vers Staging
+        if: ${{ github.event.inputs.environment_name == 'staging' }}
+        run: |
+          echo "--- DÉPLOIEMENT STAGING ---"
+          echo "Exécution des tâches de build/test spécifiques à staging."
+          # Ici, vous ajouteriez votre commande de déploiement pour l'environnement de staging
+          # Exemple: ./deploy_to_staging.sh
+          
+      # Étape 3 : Déploiement Conditionnel (Production)
+      # La condition est true si l'utilisateur a choisi 'production'
+      - name: Déploiement vers Production (Vérification manuelle requise)
+        if: ${{ github.event.inputs.environment_name == 'production' }}
+        run: |
+          echo "--- DÉPLOIEMENT CRITIQUE PRODUCTION ---"
+          echo "Chargement des variables secrètes de production..."
+          # Ici, vous ajouteriez votre commande de déploiement pour l'environnement de production
+          # Exemple: aws s3 sync ./dist s3://production-bucket
