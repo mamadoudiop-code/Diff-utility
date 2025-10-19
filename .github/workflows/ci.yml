@@ -1,1 +1,66 @@
+name: Comparaison de Branches et Filtrage (API Git)
 
+on:
+  push:
+    branches: [main]
+
+jobs:
+  filtrer_commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout des deux branches pour l'historique
+        uses: actions/checkout@v4
+        with:
+          # IMPORTANT : Récupérer tout l'historique pour la comparaison
+          fetch-depth: 0
+
+      - name: Identifier et Filtrer les Commits
+        id: filter
+        run: |
+          # 1. Définir les branches à comparer
+          # L'événement 'pull_request' fournit directement les références
+          BASE_REF="main"
+          HEAD_REF="feature/addo"
+          
+          echo "Comparaison : $HEAD_REF par rapport à $BASE_REF"
+          
+          # 2. Utiliser l'API Git pour lister les commits uniques
+          # `HEAD_REF ^BASE_REF` liste les commits présents dans HEAD_REF mais pas dans BASE_REF.
+          # `--pretty=format:'%s'` affiche uniquement le message du sujet du commit.
+          # `--no-merges` ignore les commits de merge.
+          ALL_COMMITS=$(git log $HEAD_REF ^$BASE_REF --pretty=format:'%s' --no-merges)
+          
+          echo "--- Messages de commit à vérifier (excluant les merges) ---"
+          echo "$ALL_COMMITS"
+          echo "---------------------------------------------------------"
+          
+          # 3. Filtrer les messages de commit
+          # On cherche ici les commits qui NE contiennent PAS le mot-clé '[NO-FEATURE]'.
+          # -v : Inverse le sens de la sélection (n'affiche PAS les lignes correspondantes)
+          # -i : Ignore la casse
+          # || true : Assure que l'étape ne plante pas si aucun commit n'est trouvé (code de sortie 1)
+          FILTERED_COMMITS=$(echo "$ALL_COMMITS" | grep -v -i '\[NO-FEATURE\]' || true)
+          
+          # 4. Définir les outputs pour les étapes suivantes
+          if [ -z "$FILTERED_COMMITS" ]; then
+            echo "✅ Aucun commit trouvé ne nécessitant un traitement (tous ont le mot-clé ou la liste est vide)."
+            echo "new_commits_found=false" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Commits trouvés nécessitant un traitement :"
+            echo "$FILTERED_COMMITS"
+            echo "new_commits_found=true" >> $GITHUB_OUTPUT
+            
+            # Stocker la liste filtrée dans un output multiligne
+            echo "filtered_list<<EOF" >> $GITHUB_OUTPUT
+            echo "$FILTERED_COMMITS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Action Conditionnelle
+        if: steps.filter.outputs.new_commits_found == 'true'
+        run: |
+          echo "L'étape 'filtrer_commits' a détecté des commits à traiter."
+          echo "Commits : ${{ steps.filter.outputs.filtered_list }}"
+          # Ajoutez ici l'action que vous souhaitez exécuter (build, test, notification, etc.)
+          # Par exemple : ./script-de-build.sh
