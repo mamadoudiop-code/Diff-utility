@@ -18,7 +18,7 @@ jobs:
           # Récupère spécifiquement la branche de la PR (head)
           ref: ${{ github.event.pull_request.head.ref }} 
 
-      - name: Lancer la Comparaison et le Filtrage
+      - name: Lancer la Comparaison et le Filtrag
         id: filter_pr
         run: |
           # 1. Définir les références
