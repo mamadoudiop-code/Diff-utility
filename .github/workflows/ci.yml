@@ -26,7 +26,7 @@ jobs:
           HEAD_REF="${{ github.event.pull_request.head.ref }}"
           # La branche BASE est la branche cible (ex: 'main').
           BASE_REF="origin/main"
-          EXCLUSION_PATTERN="^Revert |\[skip build\]"
+          EXCLUSION_PATTERN="^Revert |Reverted"
           
           
           echo "Comparaison : '$HEAD_REF' (prochaine fusion) vers '$BASE_REF' (cible)"
