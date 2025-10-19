@@ -22,7 +22,7 @@ jobs:
         id: filter_pr
         run: |
           # 1. Définir les références
-          # La branche HEAD est la branche qui sera fusionnée (ex: 'feature/new').
+          # La branche HEAD est la branche qui sera fusionnée (ex: 'feature/new')
           HEAD_REF="${{ github.event.pull_request.head.ref }}"
           # La branche BASE est la branche cible (ex: 'main').
           BASE_REF="origin/main"
