@@ -20,8 +20,8 @@ jobs:
         run: |
           # 1. Définir les branches à comparer
           # L'événement 'pull_request' fournit directement les références
-          BASE_REF="main"
-          HEAD_REF="testpipeline"
+          BASE_REF="testpipeline"
+          HEAD_REF="main"
           
           echo "Comparaison : $HEAD_REF par rapport à $BASE_REF"
           
