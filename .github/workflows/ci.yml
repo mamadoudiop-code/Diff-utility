@@ -26,6 +26,8 @@ jobs:
           HEAD_REF="${{ github.event.pull_request.head.ref }}"
           # La branche BASE est la branche cible (ex: 'main').
           BASE_REF="origin/main"
+          EXCLUSION_PATTERN="^Revert |\[skip build\]"
+          
           
           echo "Comparaison : '$HEAD_REF' (prochaine fusion) vers '$BASE_REF' (cible)"
           
@@ -41,7 +43,7 @@ jobs:
           # 3. Filtrer les messages de commit
           # On cherche les commits qui NE contiennent PAS le mot-clé d exclusion, par exemple, '[skip build]'.
           # -v : Inverse la sélection (ne garde PAS les lignes correspondantes)
-          FILTERED_COMMITS=$(echo "$COMMITS_TO_CHECK" | grep -v -i '\[skip build\]' || true)
+          FILTERED_COMMITS=$(echo "$COMMITS_TO_CHECK" | grep -v -i -E "$EXCLUSION_PATTERN" || true)
           
           # 4. Définir les outputs
           if [ -z "$FILTERED_COMMITS" ]; then
