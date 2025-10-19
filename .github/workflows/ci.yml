@@ -31,7 +31,7 @@ jobs:
           
           echo "Comparaison : '$HEAD_REF' (prochaine fusion) vers '$BASE_REF' (cible)"
           
-          # 2. Utiliser l API Git pour lister les commits uniques
+          # 2. Utiliser l API Git pour lister les commits unique
           # Syntaxe : liste les commits présents dans HEAD_REF mais pas dans BASE_REF.
           # (C est l ensemble des nouveaux commits introduits par la PR).
           COMMITS_TO_CHECK=$(git log "$HEAD_REF" ^"$BASE_REF" --pretty=format:'%s' --no-merges)
