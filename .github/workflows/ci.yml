@@ -1,66 +1,65 @@
-name: Comparaison de Branches et Filtrage (API Git)
+name: Comparaison PR et Filtrage Commits
 
 on:
-  push:
-    branches: [main]
+  pull_request:
+    # Se déclenche lorsque la PR est ouverte, mise à jour (synchronize) ou rouverte
+    types: [opened, synchronize, reopened] 
 
 jobs:
-  filtrer_commits:
+  filtrer_commits_pr:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout des deux branches pour l'historique
+      - name: Checkout des branches
         uses: actions/checkout@v4
         with:
-          # IMPORTANT : Récupérer tout l'historique pour la comparaison
-          fetch-depth: 0
+          # Crucial : Récupère l'historique complet pour la comparaison.
+          fetch-depth: 0 
+          # Récupère spécifiquement la branche de la PR (head)
+          ref: ${{ github.event.pull_request.head.ref }} 
 
-      - name: Identifier et Filtrer les Commits
-        id: filter
+      - name: Lancer la Comparaison et le Filtrage
+        id: filter_pr
         run: |
-          # 1. Définir les branches à comparer
-          # L'événement 'pull_request' fournit directement les références
-          BASE_REF="origin/testpipeline"
-          HEAD_REF="origin/main"
+          # 1. Définir les références
+          # La branche HEAD est la branche qui sera fusionnée (ex: 'feature/new').
+          HEAD_REF="${{ github.event.pull_request.head.ref }}"
+          # La branche BASE est la branche cible (ex: 'main').
+          BASE_REF="origin/main"
           
-          echo "Comparaison : $HEAD_REF par rapport à $BASE_REF"
+          echo "Comparaison : '$HEAD_REF' (prochaine fusion) vers '$BASE_REF' (cible)"
           
-          # 2. Utiliser l'API Git pour lister les commits uniques
-          # `HEAD_REF ^BASE_REF` liste les commits présents dans HEAD_REF mais pas dans BASE_REF.
-          # `--pretty=format:'%s'` affiche uniquement le message du sujet du commit.
-          # `--no-merges` ignore les commits de merge.
-          ALL_COMMITS=$(git log $HEAD_REF ^$BASE_REF --pretty=format:'%s' --no-merges)
+          # 2. Utiliser l API Git pour lister les commits uniques
+          # Syntaxe : liste les commits présents dans HEAD_REF mais pas dans BASE_REF.
+          # (C est l ensemble des nouveaux commits introduits par la PR).
+          COMMITS_TO_CHECK=$(git log "$HEAD_REF" ^"$BASE_REF" --pretty=format:'%s' --no-merges)
           
           echo "--- Messages de commit à vérifier (excluant les merges) ---"
-          echo "$ALL_COMMITS"
+          echo "$COMMITS_TO_CHECK"
           echo "---------------------------------------------------------"
           
           # 3. Filtrer les messages de commit
-          # On cherche ici les commits qui NE contiennent PAS le mot-clé '[NO-FEATURE]'.
-          # -v : Inverse le sens de la sélection (n'affiche PAS les lignes correspondantes)
-          # -i : Ignore la casse
-          # || true : Assure que l'étape ne plante pas si aucun commit n'est trouvé (code de sortie 1)
-          FILTERED_COMMITS=$(echo "$ALL_COMMITS" | grep -v -i '\[NO-FEATURE\]' || true)
+          # On cherche les commits qui NE contiennent PAS le mot-clé d exclusion, par exemple, '[skip build]'.
+          # -v : Inverse la sélection (ne garde PAS les lignes correspondantes)
+          FILTERED_COMMITS=$(echo "$COMMITS_TO_CHECK" | grep -v -i '\[skip build\]' || true)
           
-          # 4. Définir les outputs pour les étapes suivantes
+          # 4. Définir les outputs
           if [ -z "$FILTERED_COMMITS" ]; then
-            echo "✅ Aucun commit trouvé ne nécessitant un traitement (tous ont le mot-clé ou la liste est vide)."
+            echo "✅ Tous les commits à fusionner sont marqués ou la liste est vide. Aucune action supplémentaire requise."
             echo "new_commits_found=false" >> $GITHUB_OUTPUT
           else
-            echo "❌ Commits trouvés nécessitant un traitement :"
+            echo "❌ Commits trouvés qui nécessitent un traitement :"
             echo "$FILTERED_COMMITS"
             echo "new_commits_found=true" >> $GITHUB_OUTPUT
             
-            # Stocker la liste filtrée dans un output multiligne
+            # Pour utiliser la liste dans une étape suivante
             echo "filtered_list<<EOF" >> $GITHUB_OUTPUT
             echo "$FILTERED_COMMITS" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           fi
 
-      - name: Action Conditionnelle
-        if: steps.filter.outputs.new_commits_found == 'true'
+      - name: Exécuter l Action Conditionnelle
+        if: steps.filter_pr.outputs.new_commits_found == 'true'
         run: |
-          echo "L'étape 'filtrer_commits' a détecté des commits à traiter."
-          echo "Commits : ${{ steps.filter.outputs.filtered_list }}"
-          # Ajoutez ici l'action que vous souhaitez exécuter (build, test, notification, etc.)
-          # Par exemple : ./script-de-build.sh
+          echo "Déclenchement du build/test car des commits non ignorés ont été trouvés."
+          # Ajoutez ici l'action souhaitée (build, déploiement, etc.)
