@@ -1,93 +1,15 @@
-name: Génération manuelle de la note de publication
-
-on:
-  workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Nom du tag (ex: 31.1.0)'
-        required: true
-        type: string
-        
-env:
-  JIRA_URL: 'https://votre-instance.atlassian.net'
-  JIRA_PROJECT_KEY: 'FOGI'
-
-jobs:
-  draft_release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Créer le brouillon de la note de publication pour le tag
-        uses: release-drafter/release-drafter@v5
-        with:
-          config-name: release-drafter.yml
-          tag: ${{ github.event.inputs.tag_name }}
-          name: "Release ${{ github.event.inputs.tag_name }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+# 3. Extraction et Tri des Numéros JIRA
           
-  enrich_release_with_jira:
-    runs-on: ubuntu-latest
-    needs: draft_release # S'assure que la première étape est terminée
-    steps:
-      - name: Récupérer le brouillon de la note de publication
-        id: get_release
-        run: |
-          # Cet appel API trouve le brouillon de la dernière version créée
-          RELEASE_ID=$(curl -L \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases" | jq '.[0].id')
-          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
-      
-      - name: Enrichir la note avec les détails de Jira
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const jiraUrl = process.env.JIRA_URL;
-            const jiraUser = process.env.JIRA_USER;
-            const jiraToken = process.env.JIRA_TOKEN;
-            const releaseId = ${{ steps.get_release.outputs.release_id }};
-            const projectKey = process.env.JIRA_PROJECT_KEY;
-
-            // Récupérer le contenu du brouillon
-            const { data: release } = await github.rest.repos.getRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: releaseId,
-            });
-
-            // Trouver les identifiants Jira
-            const jiraIssueIds = new Set();
-            const regex = new RegExp(`${projectKey}-[0-9]+`, 'g');
-            let match;
-            while ((match = regex.exec(release.body)) !== null) {
-              jiraIssueIds.add(match[0]);
-            }
-
-            // Récupérer les informations de chaque ticket Jira
-            let jiraDetails = "";
-            for (const issueId of jiraIssueIds) {
-              const jiraApiUrl = `${jiraUrl}/rest/api/3/issue/${issueId}?fields=summary,status,issuetype`;
-              const response = await fetch(jiraApiUrl, {
-                headers: {
-                  'Authorization': `Basic ${Buffer.from(jiraUser + ':' + jiraToken).toString('base64')}`,
-                  'Accept': 'application/json'
-                }
-              });
-
-              if (response.ok) {
-                const issue = await response.json();
-                jiraDetails += `- **${issueId}**: ${issue.fields.summary} (${issue.fields.issuetype.name}) - Statut: ${issue.fields.status.name}\n`;
-              } else {
-                jiraDetails += `- **${issueId}**: Erreur de récupération des informations\n`;
-              }
-            }
-
-            // Mettre à jour la note de publication
-            const newBody = release.body.replace('$TICKET_LINKS', jiraDetails);
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: releaseId,
-              body: newBody,
-            });
+          # 3a. Extraction des numéros JIRA uniquement (format [A-Z]+-[0-9]+)
+          # grep -o : n affiche que la partie de la ligne qui correspond au motif
+          # -E : expression régulière étendue
+          # [A-Z]{1,}-[0-9]+ : Assure au moins 1 lettre majuscule, un tiret, et au moins 1 chiffre.
+          JIRA_LIST_RAW=$(echo "$FILTERED_COMMITS" | grep -o -E '[A-Z]{1,}-[0-9]+')
+          
+          # 3b. Supprimer les doublons et Trier (Sort)
+          # uniq : supprime les lignes dupliquées (nécessite que les lignes soient triées)
+          SORTED_JIRAS=$(echo "$JIRA_LIST_RAW" | sort -u)
+          
+          echo "----------------------------------------"
+          echo "Liste des JIRAS uniques et triés extraits :"
+          echo "$SORTED_JIRAS"
