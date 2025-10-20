@@ -1,99 +1,44 @@
-import sailpoint.object.Rule;
-import sailpoint.object.SailPointObject;
-import sailpoint.object.Filter;
-import sailpoint.object.QueryOptions;
-import sailpoint.object.AuditEvent;
-import sailpoint.object.AuditAttribute;
-import sailpoint.api.SailPointContext;
-import java.util.Date;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
-import java.text.SimpleDateFormat;
-
-// Initialisation
-StringBuilder resultOutput = new StringBuilder();
-SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-// === 1. Définition des plages de dates ===
-
-// Obtenir la date de "aujourd'hui" à minuit
-Calendar calTodayStart = Calendar.getInstance();
-calTodayStart.set(Calendar.HOUR_OF_DAY, 0);
-calTodayStart.set(Calendar.MINUTE, 0);
-calTodayStart.set(Calendar.SECOND, 0);
-calTodayStart.set(Calendar.MILLISECOND, 0);
-Date todayStart = calTodayStart.getTime();
-
-// Obtenir la date de "hier" à minuit
-Calendar calYesterdayStart = Calendar.getInstance();
-calYesterdayStart.add(Calendar.DATE, -1);
-calYesterdayStart.set(Calendar.HOUR_OF_DAY, 0);
-calYesterdayStart.set(Calendar.MINUTE, 0);
-calYesterdayStart.set(Calendar.SECOND, 0);
-calYesterdayStart.set(Calendar.MILLISECOND, 0);
-Date yesterdayStart = calYesterdayStart.getTime();
-
-// Obtenir la date de "hier" à 23:59:59
-Calendar calYesterdayEnd = Calendar.getInstance();
-calYesterdayEnd.add(Calendar.DATE, -1);
-calYesterdayEnd.set(Calendar.HOUR_OF_DAY, 23);
-calYesterdayEnd.set(Calendar.MINUTE, 59);
-calYesterdayEnd.set(Calendar.SECOND, 59);
-calYesterdayEnd.set(Calendar.MILLISECOND, 999);
-Date yesterdayEnd = calYesterdayEnd.getTime();
+# 2. Préparer le fichier de sortie
+          echo '{"jira_details": []}' > enriched_jira_data.json
+          
+          # 3. Boucler et interroger l'API JIRA (Utilisation de l'API REST v2)
+          # Utilisation de l'authentification de base (nom d'utilisateur et jeton API)
+          
+          for JIRA_ID in $JIRA_LIST; do
+            echo "Interrogation de JIRA pour : $JIRA_ID"
+            
+            # Utilisation de l'API REST JIRA pour obtenir les détails
+            JIRA_RESPONSE=$(curl -s -X GET \
+              --user "$JIRA_USER:$JIRA_TOKEN" \
+              "https://$JIRA_DOMAIN/rest/api/2/issue/$JIRA_ID" \
+              -H "Accept: application/json")
+              
+            # Vérifier si la réponse contient une erreur (par ex. "issue does not exist")
+            if echo "$JIRA_RESPONSE" | jq -e 'has("errorMessages") or has("errors")' > /dev/null; then
+              echo "Avertissement: Échec de la récupération pour $JIRA_ID. Erreur JIRA."
+              # Créer un objet d'erreur simple
+              JIRA_DETAIL='{"key": "'"$JIRA_ID"'", "error": "JIRA_API_ERROR"}'
+            else
+              # Ajouter la clé pour s'assurer que l'ID est toujours là
+              JIRA_DETAIL=$(echo "$JIRA_RESPONSE" | jq --arg key "$JIRA_ID" '. + { "key": $key }')
+            fi
+            
+            # Ajouter les détails au fichier de sortie
+            # Utilise jq pour fusionner le nouvel objet JSON dans le tableau existant
+            TEMP_FILE=$(mktemp)
+            jq --argjson detail "$JIRA_DETAIL" '.jira_details += [$detail]' enriched_jira_data.json > "$TEMP_FILE" && mv "$TEMP_FILE" enriched_jira_data.json
+          done
+          
+          echo "Résultat JSON final (enriched_jira_data.json) :"
+          cat enriched_jira_data.json
+          
+          # Rendre le fichier disponible pour l'artefact
+          echo "output_file=enriched_jira_data.json" >> $GITHUB_OUTPUT
 
 
-// Fonction pour exécuter la recherche et formater la sortie
-private String processEventsForPeriod(SailPointContext context, Date startDate, Date endDate, String periodName) {
-    StringBuilder periodOutput = new StringBuilder();
-    periodOutput.append("--- Modifications des Tâches pour la période : " + periodName + " ---\n");
-    
-    // === 2. Création de la requête d'audit ===
-    QueryOptions qo = new QueryOptions();
-    Filter mainFilter = Filter.and(
-        Filter.eq("targetClass", "sailpoint.object.TaskDefinition"),
-        Filter.in("action", new String[]{"Modify", "Create"}), // On peut ajouter "Delete"
-        Filter.ge("created", startDate),
-        Filter.le("created", endDate)
-    );
-    qo.addFilter(mainFilter);
-    qo.setOrderBy("created"); // Trier par date de modification
-
-    // Exécution de la requête
-    List<AuditEvent> events = context.getObjects(AuditEvent.class, qo);
-    
-    if (events == null || events.isEmpty()) {
-        periodOutput.append("Aucune modification de tâche trouvée pour cette période.\n");
-        return periodOutput.toString();
-    }
-    
-    // === 3. Traitement des résultats ===
-    for (AuditEvent event : events) {
-        periodOutput.append("\n");
-        periodOutput.append("Tâche        : " + event.getTargetName() + "\n");
-        periodOutput.append("Action       : " + event.getAction() + "\n");
-        periodOutput.append("Modifié par  : " + event.getSource() + "\n");
-        periodOutput.append("Date         : " + sdf.format(event.getCreated()) + "\n");
-
-        Map<String, AuditAttribute> attributes = event.getAttributes();
-        if (attributes != null && !attributes.isEmpty()) {
-            periodOutput.append("Attributs modifiés :\n");
-            for (Map.Entry<String, AuditAttribute> entry : attributes.entrySet()) {
-                AuditAttribute attr = entry.getValue();
-                periodOutput.append(String.format("  - %s :\n", attr.getName()));
-                periodOutput.append(String.format("      Ancienne valeur : %s\n", attr.getOldValue()));
-                periodOutput.append(String.format("      Nouvelle valeur : %s\n", attr.getNewValue()));
-            }
-        }
-    }
-    return periodOutput.toString();
-}
-
-// === Exécution pour les deux périodes ===
-resultOutput.append(processEventsForPeriod(context, yesterdayStart, yesterdayEnd, "Hier"));
-resultOutput.append("\n======================================================\n");
-resultOutput.append(processEventsForPeriod(context, todayStart, new Date(), "Aujourd'hui")); // new Date() pour "jusqu'à maintenant"
-
-// Retourne le résultat (sera affiché dans la console)
-return resultOutput.toString();
+      - name: Publier le fichier JSON enrichi comme Artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: donnees-jira-enrichies
+          path: enriched_jira_data.json
+          retention-days: 7
