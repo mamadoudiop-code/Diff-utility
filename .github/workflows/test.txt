@@ -1,0 +1,38 @@
+<table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif;">
+  <thead>
+    <tr>
+      <td colspan="7" style="background-color: #00703C; color: #ffffff; padding: 15px; font-size: 18px; font-weight: bold;">
+        RELEASE NOTES : Livraison d'identityiq, le 2025-11-13, révision: 34.3.0-251016-1803-cer
+      </td>
+    </tr>
+    <tr style="background-color: #333333; color: #ffffff;">
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 10%;">Numéro Jira</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 30%;">Sommaire</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 10%;">État</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 10%;">Rapporteur</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 15%;">Responsable</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 15%;">Clients</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 10%;">Statut test</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #dddddd; padding: 8px;"><a href="[URL_JIRA_1]" style="color: #00703C;">FOGI-13033</a></td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Workflow pour réassigner les rôles lors d'un transfert</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">[RIC]</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Roxanne Aubé</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Yassine El-Azhar</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">-</td>
+      <td style="border: 1px solid #dddddd; padding: 8px; background-color: #E6F3E6; color: #00703C; font-weight: bold;">UNCOVERED</td>
+    </tr>
+    <tr style="background-color: #f7f7f7;">
+      <td style="border: 1px solid #dddddd; padding: 8px;"><a href="[URL_JIRA_2]" style="color: #00703C;">FOGI-13620</a></td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Modification En TargetMappingCours employeeType</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">[LDS]</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Papa Ousmane Diouf</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Serges Michel Doumo</td>
+      <td style="border: 1px solid #dddddd; padding: 8px;">Ouajdi Hafsa</td>
+      <td style="border: 1px solid #dddddd; padding: 8px; background-color: #F8D7DA; color: #721C24; font-weight: bold;">NOTRUN</td>
+    </tr>
+    </tbody>
+</table>
