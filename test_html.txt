@@ -1,0 +1,72 @@
+# ... Votre bloc existant qui ouvre le <body> et <table> principal (width: 400px) ...
+# Il est préférable d'utiliser une table 100% de largeur pour le contenu de la release.
+
+cat << EOF
+<table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; margin-bottom: 20px;">
+  <tr>
+    <td colspan="7" style="background-color: #00703C; color: #ffffff; padding: 15px; font-size: 18px; font-weight: bold;">
+      RELEASE NOTES : Livraison d'identityiq, le \$date, révision: \$revision
+    </td>
+  </tr>
+</table>
+
+<table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; border: 1px solid #dddddd;">
+  <thead>
+    <tr style="background-color: #f5f5f5; color: #333333; font-weight: bold;">
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 10%;">Numéro Jira</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 30%;">Sommaire</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 10%;">État</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 10%;">Rapporteur</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 15%;">Responsable</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 15%;">Clients</th>
+      <th style="padding: 10px; text-align: left; border: 1px solid #dddddd; width: 10%;">Statut test</th>
+    </tr>
+  </thead>
+  <tbody>
+EOF
+
+
+for JIRA_ID in $JIRA_LIST; do
+    # ... Vos commandes jq pour récupérer les champs Jira dans les variables ...
+    # Assurez-vous d'avoir une variable pour le statut de test, par exemple:
+    # STATUS_TEST=$(echo $jira_content | jq -r ".fields.customfield_22022.value")
+    
+    # 1. Déterminer la couleur de fond de la ligne et du statut test
+    ROW_BG_COLOR="#ffffff" # Couleur par défaut (blanc)
+    STATUS_BG_COLOR="#f7f7f7" # Gris clair par défaut
+    STATUS_TEXT_COLOR="#333333"
+
+    if [ "$STATUS_TEST" == "PASSED" ]; then
+        STATUS_BG_COLOR="#E6F3E6" # Vert clair
+        STATUS_TEXT_COLOR="#00703C" # Vert foncé
+    elif [ "$STATUS_TEST" == "FAILED" ]; then
+        STATUS_BG_COLOR="#F8D7DA" # Rouge clair
+        STATUS_TEXT_COLOR="#721C24" # Rouge foncé
+    elif [ "$STATUS_TEST" == "NOTRUN" ]; then
+        STATUS_BG_COLOR="#FFF3CD" # Jaune clair
+        STATUS_TEXT_COLOR="#856404" # Jaune foncé
+    fi
+    
+    # 2. Générer la ligne avec les styles en ligne
+    cat << JIRA_LINE_EOF >> $RUNNER_WORK/sailpoint-identityiq/sailpoint-identityiq/gen-output/page.html
+    <tr style="background-color: ${ROW_BG_COLOR};">
+        <td style="border: 1px solid #dddddd; padding: 8px;">
+            <a href="https://jira.desjardins.com/browse/${JIRA_ID}" style="color: #00703C; text-decoration: none; font-weight: bold;">${JIRA_ID}</a>
+        </td>
+        <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_SUMMARY}</td>
+        <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_STATUS}</td>
+        <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_REPORTER}</td>
+        <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_RESPONSIBLE}</td>
+        <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_CLIENTS}</td>
+        <td style="border: 1px solid #dddddd; padding: 8px; background-color: ${STATUS_BG_COLOR}; color: ${STATUS_TEXT_COLOR}; font-weight: bold;">
+            ${STATUS_TEST}
+        </td>
+    </tr>
+JIRA_LINE_EOF
+done
+
+
+cat << EOF >> $RUNNER_WORK/sailpoint-identityiq/sailpoint-identityiq/gen-output/page.html
+  </tbody>
+</table>
+EOF
