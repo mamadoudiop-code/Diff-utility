@@ -60,12 +60,12 @@ jobs:
           <body>
           <div class="container">
           
-          <table class="header-table" style="width: 110%; border-collapse: collapse; font-family: Arial, sans-serif;">
+          <table class="header-table" style="width: 115%; border-collapse: collapse; font-family: Arial, sans-serif;">
             <tr>
               <td style="background-color: #00703C; color: #ffffff; font-weight: bold;">
                 RELEASE NOTES
                 <span>Livraison d'identityiq, le ${DATE}</span>
-                <span>Révision: ${REVISION}</span>
+                <span>Révision: ${REVISION}FFDDDDDDssdd</span>
               </td>
             </tr>
           </table>
