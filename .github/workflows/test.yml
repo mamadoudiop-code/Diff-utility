@@ -6,7 +6,7 @@ on:
       recipient_email:
         description: 'Adresse email du destinataire'
         required: true
-        default: 'votre.email@exemple.com'
+        default: 'diopk038@gmail.com'
       
 jobs:
   build_and_send:
@@ -141,10 +141,10 @@ jobs:
       - name: ✉️ Envoyer l'email
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ env.SMTP_SERVER }}
-          server_port: ${{ env.SMTP_PORT }}
-          username: ${{ env.SMTP_USERNAME }}
-          password: ${{ env.SMTP_PASSWORD }}
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: diopk038@gmail.com
+          password: Bambamicrosoft123
           subject: '[TEST] Release Notes identityiq du ${{ steps.generate_html.outputs.DATE }}'
           body: |
             Veuillez trouver ci-joint les notes de release au format HTML.
