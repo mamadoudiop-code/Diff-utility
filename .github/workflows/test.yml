@@ -133,7 +133,7 @@ jobs:
           </div>
           </body>
           </html>
-EOF
+          EOF
           
           # On expose le chemin du fichier HTML pour l'étape suivante
           echo "html_path=$OUTPUT_FILE" >> $GITHUB_OUTPUT
