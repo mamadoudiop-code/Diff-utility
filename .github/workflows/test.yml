@@ -2,11 +2,6 @@ name: Générer et Envoyer les Release Notes (Test)
 
 on:
   workflow_dispatch:
-    inputs:
-      recipient_email:
-        description: 'Adresse email du destinataire'
-        required: true
-        default: 'diopk038@gmail.com'
       
 jobs:
   build_and_send:
@@ -138,18 +133,9 @@ jobs:
           # On expose le chemin du fichier HTML pour l'étape suivante
           echo "html_path=$OUTPUT_FILE" >> $GITHUB_OUTPUT
 
-      - name: ✉️ Envoyer l'email
-        uses: dawidd6/action-send-mail@v3
+      - name: ⬆️ Archiver le fichier HTML comme Artefact
+        uses: actions/upload-artifact@v4
         with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: diopk038@gmail.com
-          password: Bambamicrosoft123
-          subject: '[TEST] Release Notes identityiq du ${{ steps.generate_html.outputs.DATE }}'
-          body: |
-            Veuillez trouver ci-joint les notes de release au format HTML.
-            Ce corps de texte est facultatif, le contenu principal est dans le HTML généré.
-          html_body: file://${{ steps.generate_html.outputs.html_path }}
-          to: ${{ github.event.inputs.recipient_email }}
-          from: ${{ env.SENDER_EMAIL }}
-          secure: true # Utilisez 'true' si le port est 465 (SMTPS) ou 'true' si 587 (STARTTLS)
+          name: release-notes-${{ github.run_id }}
+          path: ${{ steps.generate_html.outputs.html_path }}
+          retention-days: 7 # Garde l'artefact pendant 7 jours
