@@ -86,7 +86,7 @@ jobs:
               </tr>
             </thead>
             <tbody>
-EOF
+          EOF
           
           # Boucle de démo
           for DATA_STRING in "${JIRA_DATA[@]}"; do
