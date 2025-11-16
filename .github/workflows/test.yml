@@ -60,7 +60,7 @@ jobs:
           <body>
           <div class="container">
           
-          <table class="header-table" style="width: 113%; border-collapse: collapse; font-family: Arial, sans-serif;">
+          <table class="header-table" style="width: 114%; border-collapse: collapse; font-family: Arial, sans-serif;margin-bottom: 10px;">
             <tr>
               <td style="background-color: #00703C; color: #ffffff; font-weight: bold;">
                 RELEASE NOTES
