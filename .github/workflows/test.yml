@@ -1,0 +1,155 @@
+name: Générer et Envoyer les Release Notes (Test)
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipient_email:
+        description: 'Adresse email du destinataire'
+        required: true
+        default: 'votre.email@exemple.com'
+      
+jobs:
+  build_and_send:
+    runs-on: ubuntu-latest
+
+    # Définissez les secrets nécessaires pour l'envoi d'email
+    env:
+      SMTP_SERVER: smtp.exemple.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+      SMTP_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      SENDER_EMAIL: noreply@exemple.com
+      
+    steps:
+      - name: ⬇️ Checkout du code
+        uses: actions/checkout@v4
+        
+      - name: 📂 Préparer le répertoire de sortie
+        # Crée un répertoire de travail pour la démo
+        run: mkdir -p ${{ runner.temp }}/gen-output
+        
+      - name: ⚙️ Exécuter le script de génération HTML
+        id: generate_html
+        shell: bash
+        run: |
+          # --- Variables de démo (remplacez par les vôtres) ---
+          DATE=$(date +'%Y-%m-%d')
+          REVISION=$(git rev-parse --short HEAD)
+          # Liste de JIRA pour la boucle de démo (JIRA, SUMMARY, STATUS, REPORTER, RESPONSIBLE, CLIENTS)
+          # On simule un STATUS_TEST différent pour chaque ligne
+          JIRA_DATA=(
+            "DEMO-123|Correction bug critique|DONE|Jean.R|Marie.L|Client A, Client B|PASSED"
+            "DEMO-456|Nouvelle fonctionnalité|IN PROGRESS|Paul.A|Sophie.B|Client C|FAILED"
+            "DEMO-789|Mise à jour mineure|DONE|Lucas.C|Emma.D|Client D|NOTRUN"
+            "DEMO-101|Amélioration UX|DONE|Chloe.E|Alex.F|Client A|PASSED"
+          )
+          
+          OUTPUT_FILE="${{ runner.temp }}/gen-output/release_notes.html"
+          
+          # --- Début du script (Basé sur votre fourniture) ---
+          
+          # Entête et structure principale
+          cat << EOF > "$OUTPUT_FILE"
+          <html>
+          <head>
+            <title>Release Notes</title>
+            <meta charset="UTF-8">
+            <style>
+              body { margin: 0; padding: 0; background-color: #f4f4f4; }
+              .container { width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e0e0e0; padding: 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+              .header-table td { background-color: #00703C !important; color: #ffffff !important; padding: 15px !important; font-size: 18px !important; font-weight: bold !important; }
+              .content-table th, .content-table td { border: 1px solid #dddddd; padding: 10px; text-align: left; }
+              .content-table th { background-color: #f5f5f5; color: #333333; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+          <div class="container">
+          
+          <table class="header-table" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; margin-bottom: 20px;">
+            <tr>
+              <td colspan="7" style="background-color: #00703C; color: #ffffff; padding: 15px; font-size: 18px; font-weight: bold;">
+                RELEASE NOTES : Livraison d'identityiq, le ${DATE}, révision: ${REVISION}
+              </td>
+            </tr>
+          </table>
+
+          <table class="content-table" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; border: 1px solid #dddddd;">
+            <thead>
+              <tr style="background-color: #f5f5f5; color: #333333; font-weight: bold;">
+                <th style="width: 10%;">Numéro Jira</th>
+                <th style="width: 30%;">Sommaire</th>
+                <th style="width: 10%;">État</th>
+                <th style="width: 10%;">Rapporteur</th>
+                <th style="width: 15%;">Responsable</th>
+                <th style="width: 15%;">Clients</th>
+                <th style="width: 10%;">Statut test</th>
+              </tr>
+            </thead>
+            <tbody>
+EOF
+          
+          # Boucle de démo
+          for DATA_STRING in "${JIRA_DATA[@]}"; do
+              IFS='|' read JIRA_ID JIRA_SUMMARY JIRA_STATUS JIRA_REPORTER JIRA_RESPONSIBLE JIRA_CLIENTS STATUS_TEST <<< "$DATA_STRING"
+              
+              # 1. Déterminer la couleur de fond de la ligne et du statut test
+              ROW_BG_COLOR="#ffffff" # Couleur par défaut (blanc)
+              STATUS_BG_COLOR="#f7f7f7" # Gris clair par défaut
+              STATUS_TEXT_COLOR="#333333"
+
+              if [ "$STATUS_TEST" == "PASSED" ]; then
+                  STATUS_BG_COLOR="#E6F3E6" # Vert clair
+                  STATUS_TEXT_COLOR="#00703C" # Vert foncé
+              elif [ "$STATUS_TEST" == "FAILED" ]; then
+                  STATUS_BG_COLOR="#F8D7DA" # Rouge clair
+                  STATUS_TEXT_COLOR="#721C24" # Rouge foncé
+              elif [ "$STATUS_TEST" == "NOTRUN" ]; then
+                  STATUS_BG_COLOR="#FFF3CD" # Jaune clair
+                  STATUS_TEXT_COLOR="#856404" # Jaune foncé
+              fi
+              
+              # 2. Générer la ligne avec les styles en ligne
+              cat << JIRA_LINE_EOF >> "$OUTPUT_FILE"
+              <tr style="background-color: ${ROW_BG_COLOR};">
+                <td style="border: 1px solid #dddddd; padding: 8px;">
+                  <a href="https://jira.desjardins.com/browse/${JIRA_ID}" style="color: #00703C; text-decoration: none; font-weight: bold;">${JIRA_ID}</a>
+                </td>
+                <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_SUMMARY}</td>
+                <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_STATUS}</td>
+                <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_REPORTER}</td>
+                <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_RESPONSIBLE}</td>
+                <td style="border: 1px solid #dddddd; padding: 8px;">${JIRA_CLIENTS}</td>
+                <td style="border: 1px solid #dddddd; padding: 8px; background-color: ${STATUS_BG_COLOR}; color: ${STATUS_TEXT_COLOR}; font-weight: bold;">
+                  ${STATUS_TEST}
+                </td>
+              </tr>
+JIRA_LINE_EOF
+          done
+          
+          # Fermeture de la table et du corps du mail
+          cat << EOF >> "$OUTPUT_FILE"
+            </tbody>
+          </table>
+          </div>
+          </body>
+          </html>
+EOF
+          
+          # On expose le chemin du fichier HTML pour l'étape suivante
+          echo "html_path=$OUTPUT_FILE" >> $GITHUB_OUTPUT
+
+      - name: ✉️ Envoyer l'email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ env.SMTP_SERVER }}
+          server_port: ${{ env.SMTP_PORT }}
+          username: ${{ env.SMTP_USERNAME }}
+          password: ${{ env.SMTP_PASSWORD }}
+          subject: '[TEST] Release Notes identityiq du ${{ steps.generate_html.outputs.DATE }}'
+          body: |
+            Veuillez trouver ci-joint les notes de release au format HTML.
+            Ce corps de texte est facultatif, le contenu principal est dans le HTML généré.
+          html_body: file://${{ steps.generate_html.outputs.html_path }}
+          to: ${{ github.event.inputs.recipient_email }}
+          from: ${{ env.SENDER_EMAIL }}
+          secure: true # Utilisez 'true' si le port est 465 (SMTPS) ou 'true' si 587 (STARTTLS)
