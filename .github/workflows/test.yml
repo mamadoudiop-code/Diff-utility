@@ -62,7 +62,7 @@ jobs:
           
           <table class="header-table" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; margin-bottom: 20px;">
             <tr>
-              <td colspan="7" style="background-color: #00703C; color: #ffffff; padding: 15px; font-size: 18px; font-weight: bold;">
+              <td colspan="1" style="background-color: #00703C; color: #ffffff; padding: 5px; font-size: 18px; font-weight: bold;">
                 RELEASE NOTES
                 <span>Livraison d'identityiq, le ${DATE}</span>
                 <span>Révision: ${REVISION}</span>
